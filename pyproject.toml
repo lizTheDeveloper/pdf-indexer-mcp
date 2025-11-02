@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdf-indexer-mcp"
+version = "1.0.0"
+description = "A Model Context Protocol (MCP) server for indexing and semantically searching PDF research papers"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "GPL-3.0"}
+authors = [
+    {name = "Liz Howard", email = "", github = "lizthedeveloper"}
+]
+keywords = [
+    "mcp",
+    "model-context-protocol",
+    "pdf",
+    "research-papers",
+    "semantic-search",
+    "rag",
+    "embeddings",
+    "faiss",
+    "mlx"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Markup",
+]
+
+dependencies = [
+    "fastmcp>=2.13.0",
+    "httpx>=0.28.0",
+    "PyMuPDF>=1.26.0",
+    "mlx>=0.29.0",
+    "mlx-embeddings>=0.0.5",
+    "faiss-cpu>=1.12.0",
+    "numpy>=2.0.0",
+    "SQLAlchemy>=2.0.0",
+    "sentence-transformers>=5.0.0",
+    "scikit-learn>=1.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+pdf-indexer-mcp = "semantic_chunked_pdf_rag:main"
+
+# Note: Entry point may need adjustment if running as module
+# Alternative: Use full module path if needed
+
+[project.urls]
+Homepage = "https://github.com/lizthedeveloper/pdf-indexer-mcp"
+Documentation = "https://github.com/lizthedeveloper/pdf-indexer-mcp#readme"
+Repository = "https://github.com/lizthedeveloper/pdf-indexer-mcp"
+Issues = "https://github.com/lizthedeveloper/pdf-indexer-mcp/issues"
+
+[tool.setuptools]
+packages = ["utils", "pdf_processing", "chunking", "database", "embeddings"]
+py-modules = ["semantic_chunked_pdf_rag"]
+
+[tool.setuptools.package-data]
+"*" = ["*.md", "*.txt"]
+
