@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "GPL-3.0"}
 authors = [
-    {name = "Liz Howard", email = "", github = "lizthedeveloper"}
+    {name = "Liz Howard", email = "liz@lizthe.dev"}
 ]
 keywords = [
     "mcp",
