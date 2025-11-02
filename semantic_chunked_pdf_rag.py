@@ -949,31 +949,6 @@ def get_document_section(
     
     Note: Use get_document_structure() first to see available sections and header paths.
     """
-    """
-    Retrieve a section of a document by chunk index, header path, or page range.
-    
-    This tool allows flexible querying of document sections:
-    - By chunk_index: Returns a single chunk
-    - By header_path: Returns all chunks in that section
-    - By page_start/page_end: Returns all chunks overlapping that page range
-    
-    Args:
-        filename: The filename of the PDF in ./papers/ directory
-        chunk_index: Index of a specific chunk (0-based, optional)
-        header_path: Header path to retrieve (e.g., "Introduction", optional)
-        page_start: Starting page number (0-indexed, optional)
-        page_end: Ending page number (0-indexed, optional)
-        
-    Returns:
-        Dictionary containing:
-        - success: bool indicating if query was successful
-        - paper_id: int with database ID of the paper
-        - filename: str with filename
-        - num_chunks: int with number of chunks returned
-        - chunks: list of chunk dictionaries with full metadata
-        - error: str with error message (if unsuccessful)
-        - message: str with descriptive message
-    """
     logger.info(f"Getting document section for: {filename}")
     
     # Validate that at least one query parameter is provided
