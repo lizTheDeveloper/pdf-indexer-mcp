@@ -68,10 +68,10 @@ pdf-indexer-mcp = "semantic_chunked_pdf_rag:main"
 # Alternative: Use full module path if needed
 
 [project.urls]
-Homepage = "https://github.com/lizthedeveloper/pdf-indexer-mcp"
-Documentation = "https://github.com/lizthedeveloper/pdf-indexer-mcp#readme"
-Repository = "https://github.com/lizthedeveloper/pdf-indexer-mcp"
-Issues = "https://github.com/lizthedeveloper/pdf-indexer-mcp/issues"
+Homepage = "https://github.com/lizTheDeveloper/pdf-indexer-mcp"
+Documentation = "https://github.com/lizTheDeveloper/pdf-indexer-mcp#readme"
+Repository = "https://github.com/lizTheDeveloper/pdf-indexer-mcp"
+Issues = "https://github.com/lizTheDeveloper/pdf-indexer-mcp/issues"
 
 [tool.setuptools]
 packages = ["utils", "pdf_processing", "chunking", "database", "embeddings"]
