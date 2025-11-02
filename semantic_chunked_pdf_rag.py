@@ -106,18 +106,30 @@ def extract_filename_from_url(url: str) -> str:
 @mcp.tool
 def download_pdf(url: str) -> dict:
     """
-    Download a PDF research paper from a URL and save it locally.
+    Download a PDF research paper from a URL and save it to the papers directory.
+    
+    Use this tool when:
+    - User asks to download a paper from a URL (arXiv, direct PDF links, etc.)
+    - User provides a URL to a PDF document
+    - You need to save a PDF locally before indexing it
+    
+    The downloaded PDF will be saved in the papers/ directory with a sanitized filename.
+    If the PDF already exists, it will not be re-downloaded.
     
     Args:
-        url: The URL of the PDF document to download
+        url: The URL of the PDF document to download (must include http:// or https://)
         
     Returns:
         Dictionary containing:
         - success: bool indicating if download was successful
-        - filename: str with the saved filename (if successful)
-        - filepath: str with the full path to the saved file (if successful)
+        - filename: str with the saved filename (if successful, e.g., "1706.03762.pdf")
+        - filepath: str with the absolute path to the saved file (if successful)
         - error: str with error message (if unsuccessful)
         - message: str with descriptive message
+    
+    Example:
+        download_pdf("https://arxiv.org/pdf/1706.03762.pdf")
+        → Returns: {"success": True, "filename": "1706.03762.pdf", ...}
     """
     logger.info(f"Starting PDF download from URL: {url}")
     
@@ -252,26 +264,31 @@ def download_pdf(url: str) -> dict:
 @mcp.tool
 def chunk_pdf(filename: str, method: str = "header") -> dict:
     """
-    Extract text from a PDF and chunk it using the specified method.
+    Extract text from a PDF and divide it into semantic chunks using header-based or S2 chunking.
+    
+    Use this tool when:
+    - You need to analyze the structure of a PDF before indexing
+    - User asks how a PDF is organized or wants to see chunks
+    - You need to preview chunks before indexing
+    
+    Chunking methods:
+    - "header": Preserves document structure, groups content under headers. Best for academic papers with clear sections.
+    - "s2": Spatial-semantic hybrid approach. Uses layout analysis and semantic similarity. Best for unstructured documents.
     
     Args:
-        filename: The filename of the PDF in ./papers/ directory
-        method: Chunking method to use: "header" (header-based) or "s2" (spatial-semantic)
+        filename: The filename of the PDF in ./papers/ directory (e.g., "1706.03762.pdf")
+        method: Chunking method to use - "header" (default, preserves structure) or "s2" (spatial-semantic)
         
     Returns:
         Dictionary containing:
         - success: bool indicating if chunking was successful
         - num_chunks: int with number of chunks created (if successful)
-        - chunks: list of chunk dictionaries with:
-            - chunk_index: int (0-based)
-            - text: str (chunk text preview, first 1000 chars)
-            - full_text_length: int (full text length)
-            - header_path: str (header hierarchy path, for header method)
-            - page_start: int (first page, 0-indexed)
-            - page_end: int (last page, 0-indexed)
-            - header_level: int (1-3 for header levels, 0 for non-header content)
+        - chunks: list of chunk dictionaries with preview text and metadata
         - error: str with error message (if unsuccessful)
         - message: str with descriptive message
+    
+    Note: This only chunks the PDF - it does NOT store chunks in the database.
+    Use index_pdf() to both chunk and store in the database.
     """
     logger.info(f"Starting PDF chunking for file: {filename} using method: {method}")
     
@@ -385,26 +402,38 @@ def chunk_pdf(filename: str, method: str = "header") -> dict:
 @mcp.tool
 def index_pdf(filename: str, url: str = "", method: str = "header") -> dict:
     """
-    Index a PDF by extracting chunks and storing them in the database.
+    Index a PDF by extracting chunks and storing them in the database for search and retrieval.
     
-    This is a combined operation that:
-    1. Extracts and chunks the PDF (like chunk_pdf)
-    2. Stores chunks in the database with navigation indices
-    3. Creates section mappings for header-based navigation
+    This is the PRIMARY tool for making papers searchable. It performs a complete indexing workflow:
+    1. Extracts and chunks the PDF text
+    2. Stores chunks in the SQLite database with navigation indices
+    3. Creates section mappings for header-based navigation (if using header method)
+    
+    Use this tool when:
+    - User asks to index a paper or make it searchable
+    - User wants to add a paper to the knowledge base
+    - You need to prepare a paper for semantic search
+    
+    After indexing, use generate_embeddings() to make the paper searchable via semantic search.
     
     Args:
-        filename: The filename of the PDF in ./papers/ directory
-        url: Original URL where the PDF was downloaded from (optional)
-        method: Chunking method to use: "header" (header-based) or "s2" (spatial-semantic)
+        filename: The filename of the PDF in ./papers/ directory (must already be downloaded)
+        url: Original URL where the PDF was downloaded from (optional, for metadata)
+        method: Chunking method - "header" (default, best for academic papers) or "s2" (spatial-semantic)
         
     Returns:
         Dictionary containing:
         - success: bool indicating if indexing was successful
-        - paper_id: int with database ID of the paper (if successful)
+        - paper_id: int with database ID of the paper (if successful, use this for future queries)
         - num_chunks: int with number of chunks created (if successful)
-        - num_sections: int with number of sections created (if successful, header method only)
+        - num_sections: int with number of sections created (header method only)
         - error: str with error message (if unsuccessful)
         - message: str with descriptive message
+    
+    Example workflow:
+        1. download_pdf(url) → gets filename
+        2. index_pdf(filename, url=url, method="header") → stores in database
+        3. generate_embeddings(filename) → makes it searchable
     """
     logger.info(f"Starting PDF indexing for file: {filename} using method: {method}")
     
@@ -554,13 +583,20 @@ def list_indexed_papers() -> dict:
     """
     List all papers that have been indexed in the database.
     
+    Use this tool when:
+    - User asks "what papers do you have?" or "show me all papers"
+    - You need to check what papers are available before searching
+    - User wants to see the papers in the knowledge base
+    
     Returns:
         Dictionary containing:
         - success: bool indicating if query was successful
-        - papers: list of paper dictionaries with metadata (if successful)
+        - papers: list of paper dictionaries with metadata (filename, title, num_chunks, etc.)
         - count: int with number of papers (if successful)
         - error: str with error message (if unsuccessful)
         - message: str with descriptive message
+    
+    Each paper in the list includes: filename, title, paper_id, num_chunks, and download_date.
     """
     try:
         papers = list_all_papers()
@@ -590,17 +626,27 @@ def list_indexed_papers() -> dict:
 @mcp.tool
 def get_document_structure(filename: str) -> dict:
     """
-    Get the structure of an indexed document (sections and chunk ranges).
+    Get the structure of an indexed document including sections, headers, and chunk ranges.
+    
+    Use this tool when:
+    - User asks about a paper's structure or sections
+    - User wants to know what sections a paper contains
+    - You need to understand a paper's organization before retrieving specific sections
+    
+    This shows the hierarchical structure of the paper (headers, sections, chunk ranges).
+    Use get_document_section() to retrieve the actual content of specific sections.
     
     Args:
-        filename: The filename of the PDF in ./papers/ directory
+        filename: The filename of the PDF in ./papers/ directory (must be indexed)
         
     Returns:
         Dictionary containing:
         - success: bool indicating if query was successful
-        - structure: dict with paper metadata and sections (if successful)
+        - structure: dict with paper metadata and sections list (if successful)
         - error: str with error message (if unsuccessful)
         - message: str with descriptive message
+    
+    The structure includes paper metadata and a list of sections with their header paths and chunk ranges.
     """
     try:
         # Get paper by filename
@@ -651,40 +697,56 @@ def search_research_papers(
     model_name: str = "mlx-community/Qwen3-Embedding-0.6B"
 ) -> dict:
     """
-    Search indexed research papers using semantic similarity.
+    Search indexed research papers using semantic similarity (meaning-based search, not keyword matching).
     
-    This tool:
-    1. Generates an embedding for the query text
-    2. Searches the FAISS index for k nearest neighbors
-    3. Retrieves matched chunks with optional context (previous/next chunks)
-    4. Returns chunks with full metadata including paper information
+    This is the PRIMARY tool for finding relevant content. It performs semantic search across ALL indexed papers.
+    
+    Use this tool when:
+    - User asks questions like "find papers about X" or "search for information on Y"
+    - User wants to discover what papers discuss a topic
+    - You need to find relevant chunks across the entire knowledge base
+    - User asks "what do the papers say about X?"
+    
+    How it works:
+    1. Generates a semantic embedding for the query text
+    2. Searches the FAISS vector index for k most similar chunks
+    3. Retrieves matched chunks with surrounding context (previous/next chunks)
+    4. Returns chunks ranked by similarity with full metadata
+    
+    The search understands meaning, not just keywords. "attention mechanisms" will find chunks discussing attention even if they don't contain the exact words.
     
     Args:
-        query: Search query text
-        k: Number of top results to return (default: 5)
-        context_window: Number of neighboring chunks to include before/after each match (default: 1)
-        model_name: Hugging Face model identifier for embeddings
+        query: Search query text (describe what you're looking for in natural language)
+        k: Number of top results to return (default: 5, increase for more results)
+        context_window: Number of neighboring chunks to include before/after each match (default: 1, increase for more context)
+        model_name: Embedding model identifier (default: Qwen3-Embedding-0.6B, 1024 dimensions)
         
     Returns:
         Dictionary containing:
         - success: bool indicating if search was successful
         - query: str with the original query
         - num_results: int with number of results found
-        - results: list of result dictionaries with:
+        - results: list of result dictionaries ranked by similarity, each containing:
             - chunk_id: Database ID of the chunk
             - paper_id: Database ID of the paper
-            - filename: Filename of the paper
+            - filename: Filename of the paper (e.g., "1706.03762.pdf")
             - title: Title of the paper (if available)
             - chunk_index: Index of the chunk within the paper
-            - text: Full text of the chunk
-            - header_path: Header hierarchy path
+            - text: Full text of the chunk (the relevant content)
+            - header_path: Header hierarchy path (e.g., "Introduction", "Methods.Experimental Setup")
             - header_level: Header level (0-3)
-            - page_start: First page number
-            - page_end: Last page number
-            - distance: Similarity distance (lower is more similar)
+            - page_start: First page number (0-indexed)
+            - page_end: Last page number (0-indexed)
+            - distance: Similarity distance (lower is more similar, 0.0 = identical)
             - is_context: bool indicating if this is a context chunk (not a direct match)
         - error: str with error message (if unsuccessful)
         - message: str with descriptive message
+    
+    Example:
+        search_research_papers("transformer attention mechanisms", k=5)
+        → Returns top 5 chunks discussing attention mechanisms across all papers
+    
+    Note: Papers must be indexed (index_pdf) and have embeddings generated (generate_embeddings) before they can be searched.
     """
     logger.info(f"Starting semantic search for query: '{query[:100]}...'")
     
@@ -851,6 +913,43 @@ def get_document_section(
     page_end: Optional[int] = None
 ) -> dict:
     """
+    Retrieve a specific section or range of chunks from an indexed document.
+    
+    Use this tool when:
+    - User asks "show me the Introduction section" or "get the Methods section"
+    - User wants to see a specific page range (e.g., "pages 5-10")
+    - You need to retrieve a specific chunk by index
+    - User asks for detailed content from a specific part of a paper
+    
+    This tool retrieves the actual content, unlike get_document_structure() which only shows the structure.
+    
+    You can retrieve sections in three ways:
+    1. By header_path: "Introduction", "Methods.Experimental Setup", etc.
+    2. By page range: page_start and page_end (0-indexed)
+    3. By chunk_index: specific chunk number (0-indexed)
+    
+    Args:
+        filename: The filename of the PDF in ./papers/ directory (must be indexed)
+        chunk_index: (Optional) Index of a specific chunk to retrieve (0-based)
+        header_path: (Optional) Header path to retrieve (e.g., "Introduction", "Methods.Results")
+        page_start: (Optional) Starting page number (0-indexed)
+        page_end: (Optional) Ending page number (0-indexed)
+        
+    Returns:
+        Dictionary containing:
+        - success: bool indicating if retrieval was successful
+        - paper_id: int with database ID of the paper (if successful)
+        - filename: str with filename
+        - num_chunks: int with number of chunks returned (if successful)
+        - chunks: list of chunk dictionaries with full text and metadata (if successful)
+        - error: str with error message (if unsuccessful)
+        - message: str with descriptive message
+    
+    Each chunk includes: chunk_index, text (full content), header_path, header_level, page_start, page_end.
+    
+    Note: Use get_document_structure() first to see available sections and header paths.
+    """
+    """
     Retrieve a section of a document by chunk index, header path, or page range.
     
     This tool allows flexible querying of document sections:
@@ -980,27 +1079,45 @@ def get_document_section(
 @mcp.tool
 def generate_embeddings(filename: str, model_name: str = "mlx-community/Qwen3-Embedding-0.6B") -> dict:
     """
-    Generate embeddings for all chunks in a paper and store them in FAISS index.
+    Generate semantic embeddings for all chunks in a paper and add them to the FAISS vector index for search.
     
-    This tool:
+    This tool is REQUIRED to make a paper searchable via semantic search. After indexing a paper (index_pdf),
+    you must generate embeddings before the paper can be found by search_research_papers().
+    
+    Use this tool when:
+    - User asks to make a paper searchable
+    - You've just indexed a paper and need to enable semantic search
+    - A paper is indexed but search_research_papers() returns no results
+    
+    How it works:
     1. Loads all chunks from the database for the specified paper
-    2. Generates embeddings using MLX (optimized for Apple Silicon)
-    3. Adds embeddings to the FAISS vector index
+    2. Generates semantic embeddings using MLX (optimized for Apple Silicon, ~35 embeddings/second)
+    3. Adds embeddings to the FAISS vector index for fast similarity search
     4. Updates database with embedding indices
-    5. Persists the FAISS index to disk
+    5. Persists the FAISS index to disk (survives server restarts)
+    
+    Embeddings capture semantic meaning - similar concepts have similar embeddings even if words differ.
     
     Args:
-        filename: The filename of the PDF in ./papers/ directory
-        model_name: Hugging Face model identifier for embeddings
+        filename: The filename of the PDF in ./papers/ directory (must be indexed first)
+        model_name: Hugging Face model identifier for embeddings (default: Qwen3-Embedding-0.6B, 1024 dimensions)
         
     Returns:
         Dictionary containing:
         - success: bool indicating if embedding generation was successful
         - paper_id: int with database ID of the paper (if successful)
         - num_embeddings: int with number of embeddings generated (if successful)
-        - embedding_dim: int with dimension of embeddings (if successful)
+        - embedding_dim: int with dimension of embeddings (if successful, 1024 for Qwen3-Embedding-0.6B)
         - error: str with error message (if unsuccessful)
         - message: str with descriptive message
+    
+    Example workflow:
+        1. download_pdf(url) → downloads paper
+        2. index_pdf(filename) → indexes paper (stores chunks in database)
+        3. generate_embeddings(filename) → makes it searchable
+        4. search_research_papers("query") → can now find content in this paper
+    
+    Performance: ~35 embeddings/second on Apple Silicon. First run downloads model automatically.
     """
     logger.info(f"Starting embedding generation for: {filename}")
     

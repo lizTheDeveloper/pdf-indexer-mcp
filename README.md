@@ -35,6 +35,27 @@ When you connect this MCP server to an AI agent (like in Cursor, Claude Desktop,
 - ⚡ **FAISS Vector Index**: Fast similarity search even for thousands of chunks
 - 🧠 **Context-Aware**: Retrieve surrounding chunks for better context
 
+## Quick Start: Suggested Prompt
+
+Once the MCP server is configured, you can use prompts like:
+
+```
+"I have this research paper URL: [URL]. Please download it, index it, 
+make it searchable, and then search for information about [topic]."
+```
+
+Or more simply:
+```
+"Download and index this paper: [URL], then search it for information about [topic]."
+```
+
+The agent will automatically:
+1. Download the PDF
+2. Index it into the database
+3. Generate embeddings for semantic search
+4. Search for relevant content
+5. Present the results
+
 ## Installation
 
 ### Option 1: Install from GitHub (Recommended)
@@ -399,10 +420,122 @@ pdf_indexer_mcp/
 └── README.md                   # This file
 ```
 
+## Learning RAG (Retrieval-Augmented Generation)
+
+This MCP server demonstrates a complete **RAG (Retrieval-Augmented Generation)** pipeline for research papers. Understanding RAG is essential for building effective AI systems that can access and use external knowledge.
+
+### What is RAG?
+
+**RAG** combines information retrieval with language generation, allowing LLMs to:
+1. **Retrieve** relevant information from external sources (here: research papers)
+2. **Augment** the LLM's context with retrieved information
+3. **Generate** responses grounded in retrieved content
+
+Instead of relying solely on pre-trained knowledge, RAG enables systems to answer questions using up-to-date, domain-specific information.
+
+### How This Server Implements RAG
+
+This MCP server provides a complete RAG implementation:
+
+#### 1. **Document Ingestion** (Retrieval Setup)
+- **`download_pdf()`**: Fetch papers from URLs
+- **`index_pdf()`**: Extract and chunk text, store in database
+- Creates a searchable knowledge base
+
+#### 2. **Semantic Indexing** (Vector Search)
+- **`generate_embeddings()`**: Convert text chunks into semantic vectors
+- Uses MLX-optimized embeddings (Qwen3-Embedding-0.6B, 1024 dimensions)
+- Stores vectors in FAISS for fast similarity search
+
+#### 3. **Retrieval** (Finding Relevant Content)
+- **`search_research_papers()`**: Semantic search across all papers
+- Finds relevant chunks based on meaning, not just keywords
+- Returns ranked results with context
+
+#### 4. **Augmentation** (Context Enhancement)
+- **`get_document_section()`**: Retrieve full context from specific sections
+- Includes surrounding chunks for better understanding
+- Provides metadata (section, page, headers)
+
+#### 5. **Generation** (LLM Response)
+- Agent receives retrieved chunks
+- Uses them as context to generate grounded responses
+- Responses are based on actual paper content, not just training data
+
+### RAG Pipeline Flow
+
+```
+User Query
+    ↓
+Semantic Search (search_research_papers)
+    ↓
+Find Relevant Chunks (FAISS vector search)
+    ↓
+Retrieve Context (get_document_section if needed)
+    ↓
+Augment LLM Context (pass chunks to LLM)
+    ↓
+Generate Response (grounded in retrieved content)
+```
+
+### Key RAG Concepts Demonstrated
+
+1. **Chunking Strategy**: Two approaches shown:
+   - **Header-based**: Preserves structure, ideal for academic papers
+   - **S2 chunking**: Spatial-semantic hybrid for unstructured documents
+
+2. **Semantic Search**: Uses embeddings to find meaning, not just keywords
+   - "attention mechanisms" finds related concepts even without exact words
+   - Better than traditional keyword search
+
+3. **Vector Database**: FAISS for fast similarity search
+   - Scales to thousands of chunks
+   - Sub-millisecond search times
+
+4. **Incremental Indexing**: Add papers without rebuilding entire index
+   - Each paper can be indexed independently
+   - Embeddings added incrementally
+
+5. **Context Windows**: Retrieve surrounding chunks for better context
+   - Helps maintain narrative flow
+   - Provides background for understanding
+
+### Why RAG Matters
+
+**Without RAG**: LLMs can only use pre-trained knowledge, which may be:
+- Outdated (training data cutoff)
+- Generic (not domain-specific)
+- Limited (no access to private/publications)
+
+**With RAG**: LLMs can:
+- Access current information (newly published papers)
+- Use domain-specific knowledge (research papers)
+- Ground responses in verifiable sources
+- Answer questions about documents not in training data
+
+### RAG Best Practices (This Implementation)
+
+1. **Effective Chunking**: Balance chunk size - too small loses context, too large dilutes relevance
+2. **Semantic Embeddings**: Use models optimized for your domain (here: research papers)
+3. **Vector Search**: Fast retrieval is essential (FAISS provides sub-millisecond search)
+4. **Metadata Preservation**: Keep headers, pages, sections for navigation
+5. **Context Retrieval**: Include surrounding chunks for better understanding
+
+### Further Learning
+
+To understand RAG better:
+- Experiment with different chunking methods (header vs S2)
+- Try different embedding models
+- Adjust context_window in search_research_papers()
+- Explore the database structure to see how chunks are stored
+- Check logs to see performance metrics
+
+This implementation provides a production-ready RAG system you can study and extend.
+
 ## Requirements
 
-- **Python**: 3.8+
-- **Platform**: macOS (for MLX), Linux/Windows (with CPU fallback)
+- **Python**: 3.9+ (required by dependencies like numpy 2.2.6)
+- **Platform**: macOS (for MLX optimization), Linux/Windows (with CPU fallback)
 - **RAM**: ~500MB for embeddings
 - **Disk**: ~1GB for model downloads (first run)
 

@@ -7,7 +7,7 @@ name = "pdf-indexer-mcp"
 version = "1.0.0"
 description = "A Model Context Protocol (MCP) server for indexing and semantically searching PDF research papers"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = {text = "GPL-3.0"}
 authors = [
     {name = "Liz Howard", email = "", github = "lizthedeveloper"}
@@ -29,7 +29,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
