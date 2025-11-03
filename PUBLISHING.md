@@ -125,5 +125,5 @@ pip install pdf-indexer-mcp  # Test installation
 
 ---
 
-**Last Updated**: 2025-01-31
+**Last Updated**: 2025-11-03
 
