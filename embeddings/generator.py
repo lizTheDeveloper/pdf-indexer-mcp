@@ -44,9 +44,35 @@ class EmbeddingGenerator:
         """Load the embedding model and tokenizer."""
         try:
             from mlx_embeddings.utils import load
+            import os
             
             start_time = time.time()
-            self.model, self.tokenizer = load(self.model_name)
+            
+            # Check if we need HuggingFace authentication
+            # Try to load the model - if it fails with ModelNotFoundError, 
+            # it might be an authentication issue or the model path is wrong
+            try:
+                self.model, self.tokenizer = load(self.model_name)
+            except Exception as load_error:
+                # Check if it's a ModelNotFoundError - might need authentication
+                error_msg = str(load_error).lower()
+                if "model not found" in error_msg or "not found" in error_msg:
+                    # Try to provide helpful error message
+                    logger.warning(
+                        f"Model loading failed. This might be due to: "
+                        f"1) HuggingFace authentication required (run: huggingface-cli login), "
+                        f"2) Network connectivity issues, "
+                        f"3) Model name mismatch. "
+                        f"Attempting to load: {self.model_name}"
+                    )
+                    # Check if HF token is set
+                    hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_HUB_TOKEN")
+                    if not hf_token:
+                        logger.warning(
+                            "No HuggingFace token found in environment. "
+                            "Public models should work without auth, but some may require it."
+                        )
+                raise  # Re-raise the original error
             
             # Get embedding dimension by generating a test embedding
             test_texts = ["test"]
