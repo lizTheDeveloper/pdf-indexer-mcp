@@ -694,7 +694,7 @@ def search_research_papers(
     query: str,
     k: int = 5,
     context_window: int = 1,
-    model_name: str = "mlx-community/Qwen3-Embedding-0.6B"
+    model_name: str = "mlx-community/Qwen3-Embedding-0.6B-4bit-DWQ"
 ) -> dict:
     """
     Search indexed research papers using semantic similarity (meaning-based search, not keyword matching).
